@@ -8,44 +8,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Numerics;
+using GrafikaKomputerowa4.Models;
 
 namespace GrafikaKomputerowa4
 {
     public partial class Form1 : Form
     {
         int FOV = 45;
-        Matrix4x4 p1 = new Matrix4x4(0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            1, 0, 0, 0);
-        Matrix4x4 p2 = new Matrix4x4(1,0,0,0,
-            0,0,0,0,
-            0,0,0,0,
-            1,0,0,0);
-        Matrix4x4 p3 = new Matrix4x4(1, 0, 0, 0,
-            1, 0, 0, 0,
-            0, 0, 0, 0,
-            1, 0, 0, 0);
-        Matrix4x4 p4 = new Matrix4x4(0, 0, 0, 0,
-            1, 0, 0, 0,
-            0, 0, 0, 0,
-            1, 0, 0, 0);
-        Matrix4x4 p5 = new Matrix4x4(0, 0, 0, 0,
-            0, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0);
-        Matrix4x4 p6 = new Matrix4x4(1, 0, 0, 0,
-            0, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0);
-        Matrix4x4 p7 = new Matrix4x4(1, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0);
-        Matrix4x4 p8 = new Matrix4x4(0, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0);
+        Vertice v1 = new Vertice(0, 0, 0, 1);
+        Vertice v2 = new Vertice(1, 0, 0, 1);
+        Vertice v3 = new Vertice(1, 1, 0, 1);
+        Vertice v4 = new Vertice(0, 1, 0, 1);
+        Vertice v5 = new Vertice(0, 0, 1, 1);
+        Vertice v6 = new Vertice(1, 0, 1, 1);
+        Vertice v7 = new Vertice(1, 1, 1, 1);
+        Vertice v8 = new Vertice(0, 1, 1, 1);
+
         public Form1()
         {
             InitializeComponent();
@@ -54,34 +32,15 @@ namespace GrafikaKomputerowa4
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            //var res = Matrix4x4.Multiply(Matrix4x4.Multiply(mProjekcji(), lookAt()), mModelu());
-            //Matrix4x4 a1 = Matrix4x4.Multiply(res, p1);
-            //Matrix4x4 a2 = Matrix4x4.Multiply(res, p2);
-            //Matrix4x4 a3 = Matrix4x4.Multiply(res, p3);
-            //Matrix4x4 a4 = Matrix4x4.Multiply(res, p4);
-            //Matrix4x4 a5 = Matrix4x4.Multiply(res, p5);
-            //Matrix4x4 a6 = Matrix4x4.Multiply(res, p6);
-            //Matrix4x4 a7 = Matrix4x4.Multiply(res, p7);
-            //Matrix4x4 a8 = Matrix4x4.Multiply(res, p8);
 
-
-            //Matrix4x4 x1 = Matrix4x4.Multiply(a1, (float)(1.0 / a1.M41));
-            //Matrix4x4 x2 = Matrix4x4.Multiply(a2, (float)(1.0 / a2.M41));
-            //Matrix4x4 x3 = Matrix4x4.Multiply(a3, (float)(1.0 / a3.M41));
-            //Matrix4x4 x4 = Matrix4x4.Multiply(a4, (float)(1.0 / a4.M41));
-            //Matrix4x4 x5 = Matrix4x4.Multiply(a5, (float)(1.0 / a5.M41));
-            //Matrix4x4 x6 = Matrix4x4.Multiply(a6, (float)(1.0 / a6.M41));
-            //Matrix4x4 x7 = Matrix4x4.Multiply(a7, (float)(1.0 / a7.M41));
-            //Matrix4x4 x8 = Matrix4x4.Multiply(a8, (float)(1.0 / a8.M41));
-
-            (float, float, float) pp1 = vertexShader(mProjekcji(), lookAt(), mModelu(), p1);
-            (float, float, float) pp2 = vertexShader(mProjekcji(), lookAt(), mModelu(), p2);
-            (float, float, float) pp3 = vertexShader(mProjekcji(), lookAt(), mModelu(), p3);
-            (float, float, float) pp4 = vertexShader(mProjekcji(), lookAt(), mModelu(), p4);
-            (float, float, float) pp5 = vertexShader(mProjekcji(), lookAt(), mModelu(), p5);
-            (float, float, float) pp6 = vertexShader(mProjekcji(), lookAt(), mModelu(), p6);
-            (float, float, float) pp7 = vertexShader(mProjekcji(), lookAt(), mModelu(), p7);
-            (float, float, float) pp8 = vertexShader(mProjekcji(), lookAt(), mModelu(), p8);
+            (float, float, float) pp1 = vertexShader(mProjekcji(), lookAt(), mModelu(), v1);
+            (float, float, float) pp2 = vertexShader(mProjekcji(), lookAt(), mModelu(), v2);
+            (float, float, float) pp3 = vertexShader(mProjekcji(), lookAt(), mModelu(), v3);
+            (float, float, float) pp4 = vertexShader(mProjekcji(), lookAt(), mModelu(), v4);
+            (float, float, float) pp5 = vertexShader(mProjekcji(), lookAt(), mModelu(), v5);
+            (float, float, float) pp6 = vertexShader(mProjekcji(), lookAt(), mModelu(), v6);
+            (float, float, float) pp7 = vertexShader(mProjekcji(), lookAt(), mModelu(), v7);
+            (float, float, float) pp8 = vertexShader(mProjekcji(), lookAt(), mModelu(), v8);
 
             Pen pen = new Pen(Color.Black);
             var p1_ = pointToPixel(pp1.Item1, pp1.Item2);
@@ -111,10 +70,10 @@ namespace GrafikaKomputerowa4
 
         }
 
-        private (float, float, float) vertexShader(Matrix4x4 mProj, Matrix4x4 lookAt, Matrix4x4 mModel, Matrix4x4 p)
+        private (float, float, float) vertexShader(Matrix4x4 mProj, Matrix4x4 lookAt, Matrix4x4 mModel, Vertice p)
         {
             var res = Matrix4x4.Multiply(Matrix4x4.Multiply(mProj, lookAt), mModel);
-            Matrix4x4 a1 = Matrix4x4.Multiply(res, p);
+            Matrix4x4 a1 = Matrix4x4.Multiply(res, p.matrix4X4);
             Matrix4x4 x1 = Matrix4x4.Multiply(a1, (float)(1.0 / a1.M41));
             return (x1.M11, x1.M21, x1.M31);
         }
@@ -130,7 +89,7 @@ namespace GrafikaKomputerowa4
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            trackBar1.Value = 45;
         }
 
         private Matrix4x4 lookAt()//mView
@@ -156,10 +115,6 @@ namespace GrafikaKomputerowa4
             double e = 1.0 / Math.Tan(FOV/2.0/180.0*Math.PI);
             double a = pictureBox1.Height / (double)pictureBox1.Width;
 
-            //            return new Matrix4x4((float)2.414, 0, 0, 0,
-            //0, (float)2.414, 0, 0,
-            //0, 0, (float)-1.02, (float)-2.02,
-            //0, 0, -1, 0);
             return new Matrix4x4((float)e, 0, 0, 0,
                 0, (float)(e / a), 0, 0,
                 0, 0, (float)((f + n) / (f - n)), (float)((2 * f * n) / (f - n)),
