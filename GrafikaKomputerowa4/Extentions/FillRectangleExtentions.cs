@@ -22,7 +22,7 @@ namespace GrafikaKomputerowa4.Extentions
             g.FillPolygon(brush, points.ToArray());
         }
 
-        public static void PaintTriangle(this Graphics g, Color[,] colorToPaint, Triangle triangle, double[,] zBufor)
+        public static void PaintTriangle(this Graphics g, Color[,] colorToPaint, Triangle triangle, double[,] zBufor, object[,] objectLock)
         {
             var data = triangle.GetETTable();
             List<AETPointer>[] ET = data.Item1;
@@ -31,7 +31,7 @@ namespace GrafikaKomputerowa4.Extentions
            
             for (int y = data.Item2; y <= ET.Length - 1; y++)
             {
-                FillingHelper.FillDokladne(colorToPaint, AET, y, triangle.color, zBufor, triangle);
+                FillingHelper.FillDokladne(colorToPaint, AET, y, triangle.color, zBufor, triangle, objectLock);
                 
 
                 for (int i = AET.Count - 1; i >= 0; i--)

@@ -10,7 +10,7 @@ namespace GrafikaKomputerowa4.Helpers
 {
     public static class FillingHelper
     {
-        public static void FillDokladne(Color[,] colorToPaint, List<AETPointer> AET, int y, Color backColor, double[,] zBufor, Triangle triangle)
+        public static void FillDokladne(Color[,] colorToPaint, List<AETPointer> AET, int y, Color backColor, double[,] zBufor, Triangle triangle, object[,] objectLock)
         {
             for (int i = 0; i < AET.Count; i += 2)
             {
@@ -19,10 +19,13 @@ namespace GrafikaKomputerowa4.Helpers
                     if (x >= 0 && y >= 0 && x < 776 && y < 426)
                     {
                         double z = CountZ(triangle, x, y);
-                        if(z > zBufor[x,y])
+                        lock (objectLock[x, y])
                         {
-                            colorToPaint[x, y] = backColor;
-                            zBufor[x, y] = z;
+                            if (z > zBufor[x, y])
+                            {
+                                colorToPaint[x, y] = backColor;
+                                zBufor[x, y] = z;
+                            }
                         }
                     }
                 }

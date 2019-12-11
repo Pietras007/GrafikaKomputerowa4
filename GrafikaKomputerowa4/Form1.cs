@@ -28,9 +28,12 @@ namespace GrafikaKomputerowa4
         Vertice v8 = new Vertice(0, 1, 1, 1);
         Random random = new Random();
         public double[,] zBufor;
+        public static object[,] objectLock;
 
         List<Triangle> triangles1 = new List<Triangle>();
         List<Triangle> triangles2 = new List<Triangle>();
+
+        List<Triangle> allTriangles = new List<Triangle>();
         int angle = 0;
 
         public Form1()
@@ -41,40 +44,66 @@ namespace GrafikaKomputerowa4
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            SolidBrush brush = new SolidBrush(Color.White);
-            g.FillRectangle(brush, 0, 0, pictureBox1.Width, pictureBox1.Height);
-
-            for (int i = 0; i < pictureBox1.Width; i++)
+            using (SolidBrush brush = new SolidBrush(Color.White))
             {
-                for (int j = 0; j < pictureBox1.Height; j++)
-                {
-                    zBufor[i, j] = double.MinValue;
-                }
+                g.FillRectangle(brush, 0, 0, pictureBox1.Width, pictureBox1.Height);
             }
 
-            //List<(float, float, float)> pp = new List<(float, float, float)>();
-            //foreach(var v in vertices)
+            //Parallel.For(0, allTriangles.Count, i =>
             //{
-            //    pp.Add(vertexShader(mProjekcji(), lookAt, mModelu, v));
-            //}
+            //    allTriangles[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu, allTriangles[i].A);
+            //    allTriangles[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu, allTriangles[i].B);
+            //    allTriangles[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu, allTriangles[i].C);
+            //    allTriangles[i].p_A = pointToPixel(allTriangles[i].ppA.Item1, allTriangles[i].ppA.Item2);
+            //    allTriangles[i].p_B = pointToPixel(allTriangles[i].ppB.Item1, allTriangles[i].ppB.Item2);
+            //    allTriangles[i].p_C = pointToPixel(allTriangles[i].ppC.Item1, allTriangles[i].ppC.Item2);
+            //});
 
-            var colorToPaint = new Color[pictureBox1.Width, pictureBox1.Height];
-            for (int i = 0; i < triangles1.Count; i++)
+            Parallel.For(0, triangles1.Count, i =>
             {
-                g.PaintTriangle(colorToPaint, triangles1[i], zBufor);
-            }
+                triangles1[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].A);
+                triangles1[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].B);
+                triangles1[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].C);
+                triangles1[i].p_A = pointToPixel(triangles1[i].ppA.Item1, triangles1[i].ppA.Item2);
+                triangles1[i].p_B = pointToPixel(triangles1[i].ppB.Item1, triangles1[i].ppB.Item2);
+                triangles1[i].p_C = pointToPixel(triangles1[i].ppC.Item1, triangles1[i].ppC.Item2);
+            });
 
-            for (int i = 0; i < triangles2.Count; i++)
-            {
-                g.PaintTriangle(colorToPaint, triangles2[i], zBufor);
-            }
-
-            for (int i = 0; i < triangles1.Count; i++)
+            Parallel.For(0, triangles2.Count, i =>
             {
                 triangles2[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].A);
                 triangles2[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].B);
                 triangles2[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].C);
-            }
+                triangles2[i].p_A = pointToPixel(triangles2[i].ppA.Item1, triangles2[i].ppA.Item2);
+                triangles2[i].p_B = pointToPixel(triangles2[i].ppB.Item1, triangles2[i].ppB.Item2);
+                triangles2[i].p_C = pointToPixel(triangles2[i].ppC.Item1, triangles2[i].ppC.Item2);
+            });
+
+            Parallel.For(0, pictureBox1.Width, i =>
+            {
+                for (int j = 0; j < pictureBox1.Height; j++)
+                {
+                    zBufor[i, j] = double.MinValue;
+                    objectLock[i, j] = new object();
+                }
+            });
+
+            var colorToPaint = new Color[pictureBox1.Width, pictureBox1.Height];
+
+            Parallel.For(0, allTriangles.Count, i =>
+            {
+                g.PaintTriangle(colorToPaint, allTriangles[i], zBufor, objectLock);
+            });
+
+            //Parallel.For(0, triangles1.Count, i =>
+            //{
+            //    g.PaintTriangle(colorToPaint, triangles1[i], zBufor, objectLock);
+            //});
+
+            //Parallel.For(0, triangles2.Count, i =>
+            //{
+            //    g.PaintTriangle(colorToPaint, triangles2[i], zBufor, objectLock);
+            //});
 
             using (Bitmap processedBitmap = new Bitmap(pictureBox1.Width, pictureBox1.Height))
             {
@@ -92,11 +121,11 @@ namespace GrafikaKomputerowa4
                         byte* currentLine = PtrFirstPixel + (y * bitmapData.Stride);
                         for (int x = 0; x < widthInBytes; x = x + bytesPerPixel)
                         {
-                                currentLine[x] = colorToPaint[x / 4, y].B;
-                                currentLine[x + 1] = colorToPaint[x / 4, y].G;
-                                currentLine[x + 2] = colorToPaint[x / 4, y].R;
-                                currentLine[x + 3] = colorToPaint[x / 4, y].A;
-                            
+                            currentLine[x] = colorToPaint[x / 4, y].B;
+                            currentLine[x + 1] = colorToPaint[x / 4, y].G;
+                            currentLine[x + 2] = colorToPaint[x / 4, y].R;
+                            currentLine[x + 3] = colorToPaint[x / 4, y].A;
+
                         }
                     });
                     processedBitmap.UnlockBits(bitmapData);
@@ -105,42 +134,7 @@ namespace GrafikaKomputerowa4
                 g.DrawImage(processedBitmap, 0, 0);
             }
 
-
-            for (int i=0;i<triangles1.Count;i++)
-            {
-                triangles1[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].A);
-                triangles1[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].B);
-                triangles1[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].C);
-            }
-
-            for (int i = 0; i < triangles1.Count; i++)
-            {
-                triangles2[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].A);
-                triangles2[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].B);
-                triangles2[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].C);
-            }
-
-            //List<(int, int)> p_ = new List<(int, int)>();
-            //foreach(var v in pp)
-            //{
-            //    p_.Add(pointToPixel(v.Item1, v.Item2));
-            //}
-
-            for (int i = 0; i < triangles1.Count; i++)
-            {
-                triangles1[i].p_A = pointToPixel(triangles1[i].ppA.Item1, triangles1[i].ppA.Item2);
-                triangles1[i].p_B = pointToPixel(triangles1[i].ppB.Item1, triangles1[i].ppB.Item2);
-                triangles1[i].p_C = pointToPixel(triangles1[i].ppC.Item1, triangles1[i].ppC.Item2);
-            }
-
-            for (int i = 0; i < triangles1.Count; i++)
-            {
-                triangles2[i].p_A = pointToPixel(triangles2[i].ppA.Item1, triangles2[i].ppA.Item2);
-                triangles2[i].p_B = pointToPixel(triangles2[i].ppB.Item1, triangles2[i].ppB.Item2);
-                triangles2[i].p_C = pointToPixel(triangles2[i].ppC.Item1, triangles2[i].ppC.Item2);
-            }
-
-            Pen pen = new Pen(Color.Black);
+            //Pen pen = new Pen(Color.Black);
             //for (int i = 0; i < triangles1.Count; i++)
             //{
             //    g.PrintTriangle(pen, triangles1[i]);
@@ -160,18 +154,19 @@ namespace GrafikaKomputerowa4
             return (x1.M11, x1.M21, x1.M31);
         }
 
-        private (int,int) pointToPixel(float pointX, float pointY)
+        private (int, int) pointToPixel(float pointX, float pointY)
         {
             int width = pictureBox1.Width;
             int height = pictureBox1.Height;
             float px = pointX + 1;
             float py = pointY + 1;
-            return ((int)(px*width/2.0), (int)(py * height / 2.0));
+            return ((int)(px * width / 2.0), (int)(py * height / 2.0));
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             zBufor = new double[pictureBox1.Width, pictureBox1.Height];
+            objectLock = new object[pictureBox1.Width, pictureBox1.Height];
 
             trackBar1.Value = 160;
             Color color;
@@ -224,6 +219,9 @@ namespace GrafikaKomputerowa4
             triangles2.Add(new Triangle(v5, v6, v7, color));
             color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
             triangles2.Add(new Triangle(v5, v7, v8, color));
+
+            allTriangles.AddRange(triangles1);
+            allTriangles.AddRange(triangles2);
         }
 
         Matrix4x4 lookAt = //mView
@@ -252,7 +250,7 @@ namespace GrafikaKomputerowa4
         {
             float n = 1;
             float f = 100;
-            double e = 1.0 / Math.Tan(FOV/2.0/180.0*Math.PI);
+            double e = 1.0 / Math.Tan(FOV / 2.0 / 180.0 * Math.PI);
             double a = pictureBox1.Height / (double)pictureBox1.Width;
 
             return new Matrix4x4((float)e, 0, 0, 0,
