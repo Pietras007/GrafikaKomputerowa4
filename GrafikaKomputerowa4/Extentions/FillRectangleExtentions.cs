@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GrafikaKomputerowa4.Helpers;
+using GrafikaKomputerowa4.Models;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -18,6 +20,39 @@ namespace GrafikaKomputerowa4.Extentions
             }
 
             g.FillPolygon(brush, points.ToArray());
+        }
+
+        public static void PaintTriangle(this Graphics g, Color[,] colorToPaint, Triangle triangle, double[,] zBufor)
+        {
+            var data = triangle.GetETTable();
+            List<AETPointer>[] ET = data.Item1;
+            List<AETPointer> AET = new List<AETPointer>();
+
+           
+            for (int y = data.Item2; y <= ET.Length - 1; y++)
+            {
+                FillingHelper.FillDokladne(colorToPaint, AET, y, triangle.color, zBufor, triangle);
+                
+
+                for (int i = AET.Count - 1; i >= 0; i--)
+                {
+                    if (AET[i].Ymax == y)
+                    {
+                        AET.RemoveAt(i);
+                    }
+                }
+
+                if (ET[y] != null)
+                {
+                    AET.AddRange(ET[y]);
+                    AET = AET.OrderBy(o => o.X).ThenBy(x => x.m).ToList();
+                }
+
+                for (int i = 0; i < AET.Count; i++)
+                {
+                    AET[i].X += AET[i].m;
+                }
+            }
         }
     }
 }

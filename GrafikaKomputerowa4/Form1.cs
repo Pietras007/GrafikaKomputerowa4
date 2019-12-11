@@ -10,12 +10,13 @@ using System.Windows.Forms;
 using System.Numerics;
 using GrafikaKomputerowa4.Models;
 using GrafikaKomputerowa4.Extentions;
+using System.Drawing.Imaging;
 
 namespace GrafikaKomputerowa4
 {
     public partial class Form1 : Form
     {
-        int FOV = 45;
+        int FOV = 120;
         List<Vertice> vertices = new List<Vertice>();
         Vertice v1 = new Vertice(0, 0, 0, 1);
         Vertice v2 = new Vertice(1, 0, 0, 1);
@@ -25,6 +26,11 @@ namespace GrafikaKomputerowa4
         Vertice v6 = new Vertice(1, 0, 1, 1);
         Vertice v7 = new Vertice(1, 1, 1, 1);
         Vertice v8 = new Vertice(0, 1, 1, 1);
+        Random random = new Random();
+        public double[,] zBufor;
+
+        List<Triangle> triangles1 = new List<Triangle>();
+        List<Triangle> triangles2 = new List<Triangle>();
         int angle = 0;
 
         public Form1()
@@ -37,73 +43,113 @@ namespace GrafikaKomputerowa4
             Graphics g = e.Graphics;
             SolidBrush brush = new SolidBrush(Color.White);
             g.FillRectangle(brush, 0, 0, pictureBox1.Width, pictureBox1.Height);
-            List<(float, float, float)> pp = new List<(float, float, float)>();
-            foreach(var v in vertices)
+
+            for (int i = 0; i < pictureBox1.Width; i++)
             {
-                pp.Add(vertexShader(mProjekcji(), lookAt, mModelu, v));
+                for (int j = 0; j < pictureBox1.Height; j++)
+                {
+                    zBufor[i, j] = double.MinValue;
+                }
             }
 
-            //(float, float, float) pp1 = vertexShader(mProjekcji(), lookAt(), mModelu(), v1);
-            //(float, float, float) pp2 = vertexShader(mProjekcji(), lookAt(), mModelu(), v2);
-            //(float, float, float) pp3 = vertexShader(mProjekcji(), lookAt(), mModelu(), v3);
-            //(float, float, float) pp4 = vertexShader(mProjekcji(), lookAt(), mModelu(), v4);
-            //(float, float, float) pp5 = vertexShader(mProjekcji(), lookAt(), mModelu(), v5);
-            //(float, float, float) pp6 = vertexShader(mProjekcji(), lookAt(), mModelu(), v6);
-            //(float, float, float) pp7 = vertexShader(mProjekcji(), lookAt(), mModelu(), v7);
-            //(float, float, float) pp8 = vertexShader(mProjekcji(), lookAt(), mModelu(), v8);
+            //List<(float, float, float)> pp = new List<(float, float, float)>();
+            //foreach(var v in vertices)
+            //{
+            //    pp.Add(vertexShader(mProjekcji(), lookAt, mModelu, v));
+            //}
 
-            List<(int, int)> p_ = new List<(int, int)>();
-            foreach(var v in pp)
+            var colorToPaint = new Color[pictureBox1.Width, pictureBox1.Height];
+            for (int i = 0; i < triangles1.Count; i++)
             {
-                p_.Add(pointToPixel(v.Item1, v.Item2));
+                g.PaintTriangle(colorToPaint, triangles1[i], zBufor);
+            }
+
+            for (int i = 0; i < triangles2.Count; i++)
+            {
+                g.PaintTriangle(colorToPaint, triangles2[i], zBufor);
+            }
+
+            for (int i = 0; i < triangles1.Count; i++)
+            {
+                triangles2[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].A);
+                triangles2[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].B);
+                triangles2[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].C);
+            }
+
+            using (Bitmap processedBitmap = new Bitmap(pictureBox1.Width, pictureBox1.Height))
+            {
+                unsafe
+                {
+                    BitmapData bitmapData = processedBitmap.LockBits(new Rectangle(0, 0, processedBitmap.Width, processedBitmap.Height), ImageLockMode.ReadWrite, processedBitmap.PixelFormat);
+
+                    int bytesPerPixel = System.Drawing.Bitmap.GetPixelFormatSize(processedBitmap.PixelFormat) / 8;
+                    int heightInPixels = bitmapData.Height;
+                    int widthInBytes = bitmapData.Width * bytesPerPixel;
+                    byte* PtrFirstPixel = (byte*)bitmapData.Scan0;
+
+                    Parallel.For(0, heightInPixels, y =>
+                    {
+                        byte* currentLine = PtrFirstPixel + (y * bitmapData.Stride);
+                        for (int x = 0; x < widthInBytes; x = x + bytesPerPixel)
+                        {
+                                currentLine[x] = colorToPaint[x / 4, y].B;
+                                currentLine[x + 1] = colorToPaint[x / 4, y].G;
+                                currentLine[x + 2] = colorToPaint[x / 4, y].R;
+                                currentLine[x + 3] = colorToPaint[x / 4, y].A;
+                            
+                        }
+                    });
+                    processedBitmap.UnlockBits(bitmapData);
+                }
+
+                g.DrawImage(processedBitmap, 0, 0);
+            }
+
+
+            for (int i=0;i<triangles1.Count;i++)
+            {
+                triangles1[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].A);
+                triangles1[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].B);
+                triangles1[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu, triangles1[i].C);
+            }
+
+            for (int i = 0; i < triangles1.Count; i++)
+            {
+                triangles2[i].ppA = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].A);
+                triangles2[i].ppB = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].B);
+                triangles2[i].ppC = vertexShader(mProjekcji(), lookAt, mModelu2, triangles2[i].C);
+            }
+
+            //List<(int, int)> p_ = new List<(int, int)>();
+            //foreach(var v in pp)
+            //{
+            //    p_.Add(pointToPixel(v.Item1, v.Item2));
+            //}
+
+            for (int i = 0; i < triangles1.Count; i++)
+            {
+                triangles1[i].p_A = pointToPixel(triangles1[i].ppA.Item1, triangles1[i].ppA.Item2);
+                triangles1[i].p_B = pointToPixel(triangles1[i].ppB.Item1, triangles1[i].ppB.Item2);
+                triangles1[i].p_C = pointToPixel(triangles1[i].ppC.Item1, triangles1[i].ppC.Item2);
+            }
+
+            for (int i = 0; i < triangles1.Count; i++)
+            {
+                triangles2[i].p_A = pointToPixel(triangles2[i].ppA.Item1, triangles2[i].ppA.Item2);
+                triangles2[i].p_B = pointToPixel(triangles2[i].ppB.Item1, triangles2[i].ppB.Item2);
+                triangles2[i].p_C = pointToPixel(triangles2[i].ppC.Item1, triangles2[i].ppC.Item2);
             }
 
             Pen pen = new Pen(Color.Black);
-            //SolidBrush blueBrush = new SolidBrush(Color.Yellow);
-            //g.FillBetweenPoints(blueBrush, new (int, int)[] { p_[0], p_[1], p_[2], p_[3] });
-            //g.FillBetweenPoints(blueBrush, new (int, int)[] { p_[4], p_[5], p_[6], p_[7] });
-            //g.FillBetweenPoints(blueBrush, new (int, int)[] { p_[0], p_[1], p_[5], p_[4] });
-            //g.FillBetweenPoints(blueBrush, new (int, int)[] { p_[1], p_[5], p_[6], p_[2] });
-            //g.FillBetweenPoints(blueBrush, new (int, int)[] { p_[2], p_[6], p_[7], p_[3] });
-            //g.FillBetweenPoints(blueBrush, new (int, int)[] { p_[3], p_[7], p_[2], p_[0] });
-
-            for (int i = 0; i < 4; i++)
-            {
-                g.DrawLineBetweenPoints(pen, p_[i], p_[(i + 1) % 4]);
-                g.DrawLineBetweenPoints(pen, p_[i + 4], p_[(i + 1) % 4 + 4]);
-                g.DrawLineBetweenPoints(pen, p_[i], p_[i + 4]);
-            }
-
-            //for(int i=4;i<4;i++)
+            //for (int i = 0; i < triangles1.Count; i++)
             //{
-            //    g.DrawLineBetweenPoints(pen, p_[i], p_[i+4]);
+            //    g.PrintTriangle(pen, triangles1[i]);
             //}
-            //g.DrawLineBetweenPoints(pen, p_[0], p_[1]);
-            //var p1_ = pointToPixel(pp1.Item1, pp1.Item2);
-            //var p2_ = pointToPixel(pp2.Item1, pp2.Item2);
-            //var p3_ = pointToPixel(pp3.Item1, pp3.Item2);
-            //var p4_ = pointToPixel(pp4.Item1, pp4.Item2);
-            //var p5_ = pointToPixel(pp5.Item1, pp5.Item2);
-            //var p6_ = pointToPixel(pp6.Item1, pp6.Item2);
-            //var p7_ = pointToPixel(pp7.Item1, pp7.Item2);
-            //var p8_ = pointToPixel(pp8.Item1, pp8.Item2);
 
-            //g.DrawLine(pen, p1_.Item1, p1_.Item2, p2_.Item1, p2_.Item2);
-            //g.DrawLine(pen, p2_.Item1, p2_.Item2, p3_.Item1, p3_.Item2);
-            //g.DrawLine(pen, p3_.Item1, p3_.Item2, p4_.Item1, p4_.Item2);
-            //g.DrawLine(pen, p4_.Item1, p4_.Item2, p1_.Item1, p1_.Item2);
-
-            //g.DrawLine(pen, p5_.Item1, p5_.Item2, p6_.Item1, p6_.Item2);
-            //g.DrawLine(pen, p6_.Item1, p6_.Item2, p7_.Item1, p7_.Item2);
-            //g.DrawLine(pen, p7_.Item1, p7_.Item2, p8_.Item1, p8_.Item2);
-            //g.DrawLine(pen, p8_.Item1, p8_.Item2, p5_.Item1, p5_.Item2);
-
-            //g.DrawLine(pen, p1_.Item1, p1_.Item2, p5_.Item1, p5_.Item2);
-            //g.DrawLine(pen, p2_.Item1, p2_.Item2, p6_.Item1, p6_.Item2);
-            //g.DrawLine(pen, p3_.Item1, p3_.Item2, p7_.Item1, p7_.Item2);
-            //g.DrawLine(pen, p4_.Item1, p4_.Item2, p8_.Item1, p8_.Item2);
-
-
+            //for (int i = 0; i < triangles2.Count; i++)
+            //{
+            //    g.PrintTriangle(pen, triangles2[i]);
+            //}
         }
 
         private (float, float, float) vertexShader(Matrix4x4 mProj, Matrix4x4 lookAt, Matrix4x4 mModel, Vertice p)
@@ -125,15 +171,59 @@ namespace GrafikaKomputerowa4
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            trackBar1.Value = 45;
-            vertices.Add(new Vertice(0, 0, 0, 1));
-            vertices.Add(new Vertice(1, 0, 0, 1));
-            vertices.Add(new Vertice(1, 1, 0, 1));
-            vertices.Add(new Vertice(0, 1, 0, 1));
-            vertices.Add(new Vertice(0, 0, 1, 1));
-            vertices.Add(new Vertice(1, 0, 1, 1));
-            vertices.Add(new Vertice(1, 1, 1, 1));
-            vertices.Add(new Vertice(0, 1, 1, 1));
+            zBufor = new double[pictureBox1.Width, pictureBox1.Height];
+
+            trackBar1.Value = 160;
+            Color color;
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v1, v2, v3, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v1, v3, v4, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v2, v6, v7, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v2, v7, v3, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v4, v3, v7, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v4, v7, v8, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v1, v2, v6, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v1, v6, v5, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v1, v5, v8, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v1, v8, v4, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v5, v6, v7, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles1.Add(new Triangle(v5, v7, v8, color));
+
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v1, v2, v3, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v1, v3, v4, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v2, v6, v7, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v2, v7, v3, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v4, v3, v7, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v4, v7, v8, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v1, v2, v6, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v1, v6, v5, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v1, v5, v8, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v1, v8, v4, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v5, v6, v7, color));
+            color = Color.FromArgb(random.Next(255), random.Next(255), random.Next(255));
+            triangles2.Add(new Triangle(v5, v7, v8, color));
         }
 
         Matrix4x4 lookAt = //mView
@@ -148,10 +238,15 @@ namespace GrafikaKomputerowa4
         //        1, 0, 0, -3,
         //        0, 0, 0, 1);
 
-        Matrix4x4 mModelu = new Matrix4x4(1, 0, 0, (float)0,
-                        0, 1, 0, (float)0,
-                        0, 0, 1, (float)0,
+        Matrix4x4 mModelu = new Matrix4x4(1, 0, 0, (float)0.1,
+                        0, 1, 0, (float)0.2,
+                        0, 0, 1, (float)0.3,
                         0, 0, 0, 1);
+
+        Matrix4x4 mModelu2 = new Matrix4x4(1, 0, 0, (float)0.3,
+                0, 1, 0, (float)0.2,
+                0, 0, 1, (float)0.1,
+                0, 0, 0, 1);
 
         private Matrix4x4 mProjekcji()
         {
@@ -175,24 +270,24 @@ namespace GrafikaKomputerowa4
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            //angle++;
+            angle++;
 
-            //double angleRad = Math.PI * angle / 180;
+            double angleRad = Math.PI * angle / 180;
 
-            //var cos = Math.Cos(angleRad);
-            //var sin = Math.Sin(angleRad);
+            var cos = Math.Cos(angleRad);
+            var sin = Math.Sin(angleRad);
 
-            //mModelu.M22 = (float)cos;
-            //mModelu.M23 = (float)-sin;
-            //mModelu.M32 = (float)sin;
-            //mModelu.M33 = (float)cos;
+            mModelu2.M11 = (float)cos;
+            mModelu2.M13 = (float)-sin;
+            mModelu2.M31 = (float)sin;
+            mModelu2.M33 = (float)cos;
 
-            //mModelu.M11 = (float)cos;
-            //mModelu.M12 = (float)-sin;
-            //mModelu.M21 = (float)sin;
-            //mModelu.M22 = (float)cos;
+            mModelu.M11 = (float)cos;
+            mModelu.M12 = (float)-sin;
+            mModelu.M21 = (float)sin;
+            mModelu.M22 = (float)cos;
 
-            //pictureBox1.Invalidate();
+            pictureBox1.Invalidate();
         }
     }
 }
